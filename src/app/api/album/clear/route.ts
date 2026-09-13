@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { db, isDatabaseConfigured } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -18,12 +18,12 @@ export async function GET(request: NextRequest) {
   try {
     let deletedCount = 0;
 
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    if (isDatabaseConfigured) {
       // Find all keys starting with 'album:*'
-      const allKeys = await kv.keys("album:*");
+      const allKeys = await db.keys("album:*");
       if (allKeys.length > 0) {
         // Delete all found album keys
-        await kv.del(...allKeys);
+        await db.del(...allKeys);
         deletedCount = allKeys.length;
       }
     }

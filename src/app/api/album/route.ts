@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { db, isDatabaseConfigured } from "@/lib/db";
 
 // Global in-memory cache for local development fallback
 // Using globalThis ensures this persists across hot reloads in dev mode
@@ -42,22 +42,22 @@ export async function POST(request: Request) {
   const isVercel = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 
   // If on Vercel/production, strictly require KV to prevent stateless container bugs
-  if (isVercel && (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN)) {
+  if (isVercel && !isDatabaseConfigured) {
     return NextResponse.json({ 
-      error: "Baza de date Vercel KV nu este conectată la acest proiect Vercel! Intră în panoul Vercel al proiectului panini-collection-mzrd și dă click pe 'Storage' pentru a adăuga baza de date." 
+      error: "Baza de date Vercel KV sau Upstash Redis nu este conectată la acest proiect Vercel! Intră în panoul Vercel al proiectului panini-collection-mzrd și dă click pe 'Storage' pentru a adăuga baza de date." 
     }, { status: 500 });
   }
 
   try {
-    // Check if KV is configured
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    // Check if database is configured
+    if (isDatabaseConfigured) {
       // Ensure the generated ID is unique in Redis
       let isUnique = false;
       let finalId = id;
       let attempts = 0;
       
       while (!isUnique && attempts < 5) {
-        const existing = await kv.get(`album:${finalId}`);
+        const existing = await db.get(`album:${finalId}`);
         if (!existing) {
           isUnique = true;
         } else {
@@ -67,15 +67,15 @@ export async function POST(request: Request) {
       }
       
       initialData.id = finalId;
-      await kv.set(`album:${finalId}`, initialData);
+      await db.set(`album:${finalId}`, initialData);
       
       return NextResponse.json({ id: finalId, isLocalFallback: false });
     }
   } catch (error: any) {
-    console.error("Vercel KV connection error:", error);
+    console.error("Vercel KV/Upstash Redis connection error:", error);
     if (isVercel) {
       return NextResponse.json({ 
-        error: `Eroare de conexiune la baza de date Vercel KV: ${error.message}. Verifică setările Storage în Vercel.` 
+        error: `Eroare de conexiune la baza de date: ${error.message}. Verifică setările Storage în Vercel.` 
       }, { status: 500 });
     }
   }

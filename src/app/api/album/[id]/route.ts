@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { db, isDatabaseConfigured } from "@/lib/db";
 
 const globalCache = (globalThis as any)._localAlbumCache || new Map<string, any>();
 
@@ -11,8 +11,8 @@ export async function GET(
   const id = params.id.toLowerCase();
 
   try {
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      const data = await kv.get<any>(`album:${id}`);
+    if (isDatabaseConfigured) {
+      const data = await db.get<any>(`album:${id}`);
       if (data) {
         // Strip the PIN field before returning to prevent sniffing from the network tab
         const safeData = { ...data };
@@ -21,7 +21,7 @@ export async function GET(
       }
     }
   } catch (error) {
-    console.error(`Error reading from Vercel KV for album ${id}:`, error);
+    console.error(`Error reading from database for album ${id}:`, error);
   }
 
   // Fallback to local cache read
@@ -48,8 +48,8 @@ export async function POST(
     const enteredPin = body.pin;
 
     let existingData: any = null;
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      existingData = await kv.get(`album:${id}`);
+    if (isDatabaseConfigured) {
+      existingData = await db.get(`album:${id}`);
     } else if (globalCache.has(id)) {
       existingData = globalCache.get(id);
     }
@@ -82,8 +82,8 @@ export async function PUT(
 
     // Retrieve existing data to keep stored PIN and createdAt intact
     let existingData: any = null;
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      existingData = await kv.get(`album:${id}`);
+    if (isDatabaseConfigured) {
+      existingData = await db.get(`album:${id}`);
     } else if (globalCache.has(id)) {
       existingData = globalCache.get(id);
     }
@@ -100,12 +100,12 @@ export async function PUT(
     };
 
     try {
-      if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-        await kv.set(`album:${id}`, updatedData);
+      if (isDatabaseConfigured) {
+        await db.set(`album:${id}`, updatedData);
         return NextResponse.json({ success: true, isLocalFallback: false });
       }
     } catch (kvError) {
-      console.error(`Error writing to Vercel KV for album ${id}:`, kvError);
+      console.error(`Error writing to database for album ${id}:`, kvError);
     }
 
     // Fallback write to memory cache
