@@ -39,6 +39,15 @@ export async function POST(request: Request) {
     pin: chosenPin
   };
 
+  const isVercel = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
+
+  // If on Vercel/production, strictly require KV to prevent stateless container bugs
+  if (isVercel && (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN)) {
+    return NextResponse.json({ 
+      error: "Baza de date Vercel KV nu este conectată la acest proiect Vercel! Intră în panoul Vercel al proiectului panini-collection-mzrd și dă click pe 'Storage' pentru a adăuga baza de date." 
+    }, { status: 500 });
+  }
+
   try {
     // Check if KV is configured
     if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
@@ -62,11 +71,16 @@ export async function POST(request: Request) {
       
       return NextResponse.json({ id: finalId, isLocalFallback: false });
     }
-  } catch (error) {
-    console.error("Vercel KV connection error, falling back to local memory:", error);
+  } catch (error: any) {
+    console.error("Vercel KV connection error:", error);
+    if (isVercel) {
+      return NextResponse.json({ 
+        error: `Eroare de conexiune la baza de date Vercel KV: ${error.message}. Verifică setările Storage în Vercel.` 
+      }, { status: 500 });
+    }
   }
 
-  // Fallback to local memory cache (useful for dev mode or local testing)
+  // Fallback to local memory cache (only for local development)
   globalCache.set(id, initialData);
   return NextResponse.json({ id, isLocalFallback: true });
 }

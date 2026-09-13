@@ -37,15 +37,15 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: chosenPin })
       });
-      if (!res.ok) throw new Error("Nu s-a putut crea albumul.");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Nu s-a putut crea albumul.");
       
       localStorage.setItem("last_panini_album_id", data.id);
       // Auto-unlock edit mode locally for the creator immediately!
       localStorage.setItem(`panini_unlocked_${data.id}`, "true");
       router.push(`/album/${data.id}`);
     } catch (err: any) {
-      setError("A apărut o eroare la crearea albumului. Încearcă din nou.");
+      setError(err.message || "A apărut o eroare la crearea albumului. Încearcă din nou.");
       setIsCreating(false);
     }
   };
