@@ -9,12 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        fifa: {
-          maroon: "#8a1538", // Official Qatar/World Cup style deep maroon
-          gold: "#b49141",   // Elegant metallic gold
-          sand: "#f7f5ee",   // Cream sand background
-          navy: "#101827",   // Rich dark theme
-          green: "#0f766e"   // Collected sticker green
+        panini: {
+          red: "#e2001a",    // Official vibrant Panini Red
+          yellow: "#ffcc00", // Official Panini Accent Yellow
+          dark: "#1c1c1c",   // Elegant deep dark grey for contrasts
+          cream: "#fbfaf7",  // Background cream white
+          green: "#0f766e"   // Collected sticker teal/green
         }
       }
     },
