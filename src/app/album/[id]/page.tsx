@@ -26,6 +26,57 @@ import {
   X
 } from "lucide-react";
 
+const CODE_MAP: Record<string, string> = {
+  MEX: "mx",
+  RSA: "za",
+  KOR: "kr",
+  CZE: "cz",
+  CAN: "ca",
+  BIH: "ba",
+  QAT: "qa",
+  SUI: "ch",
+  BRA: "br",
+  MAR: "ma",
+  HAI: "ht",
+  SCO: "gb-sct",
+  USA: "us",
+  PAR: "py",
+  AUS: "au",
+  TUR: "tr",
+  GER: "de",
+  CUW: "cw",
+  CIV: "ci",
+  ECU: "ec",
+  NED: "nl",
+  JPN: "jp",
+  SWE: "se",
+  TUN: "tn",
+  BEL: "be",
+  EGY: "eg",
+  IRN: "ir",
+  NZL: "nz",
+  ESP: "es",
+  CPV: "cv",
+  KSA: "sa",
+  URU: "uy",
+  FRA: "fr",
+  SEN: "sn",
+  IRQ: "iq",
+  NOR: "no",
+  ARG: "ar",
+  ALG: "dz",
+  AUT: "at",
+  JOR: "jo",
+  POR: "pt",
+  COD: "cd",
+  UZB: "uz",
+  COL: "co",
+  ENG: "gb-eng",
+  CRO: "hr",
+  GHA: "gh",
+  PAN: "pa"
+};
+
 export default function AlbumTracker({ params }: { params: { id: string } }) {
   const router = useRouter();
   const id = params.id.toLowerCase();
@@ -701,7 +752,11 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
                                       PANINI
                                     </span>
                                   ) : (
-                                    <span className="text-2xl leading-none">{country.flag}</span>
+                                    <img 
+                                      src={`https://flagcdn.com/w40/${CODE_MAP[country.code] || country.code.toLowerCase()}.png`} 
+                                      alt={`${country.name} flag`} 
+                                      className="w-7 h-5 object-cover rounded shadow-sm border border-slate-200/50"
+                                    />
                                   )}
                                   <div>
                                     <div className="flex items-center space-x-2">
