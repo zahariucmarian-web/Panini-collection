@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, PlusCircle, ArrowRight, Loader2, Lock, X } from "lucide-react";
+import { BookOpen, PlusCircle, ArrowRight, Loader2, Lock, X, ArrowRightLeft } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -238,6 +238,19 @@ export default function Home() {
                   </div>
                 </form>
               </>
+            )}
+
+            {!showPinSetup && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/compare")}
+                  className="w-full flex items-center justify-center space-x-2.5 py-3 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold rounded-xl border border-emerald-200 transition duration-200 text-sm shadow-sm"
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                  <span>Schimbă Dubluri (Match & Swap)</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

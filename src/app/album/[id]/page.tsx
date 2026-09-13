@@ -24,7 +24,8 @@ import {
   Info,
   Lock,
   Unlock,
-  X
+  X,
+  ArrowRightLeft
 } from "lucide-react";
 
 const CODE_MAP: Record<string, string> = {
@@ -719,6 +720,15 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
               </button>
             )}
           </div>
+
+          {/* Match & Swap Navigation Button */}
+          <button
+            onClick={() => router.push(`/compare?my=${id}`)}
+            className="w-full flex items-center justify-center space-x-2 py-3.5 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold rounded-2xl border border-emerald-200 transition duration-200 text-xs shadow-sm shadow-emerald-50"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            <span>Compară & Schimbă (Match & Swap)</span>
+          </button>
         </div>
 
         {/* RIGHT COLUMN: Active Panel View */}
