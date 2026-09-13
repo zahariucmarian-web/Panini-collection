@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CONFEDERATIONS, TOTAL_STICKERS_COUNT, Country } from "@/data/countries";
+import confetti from "canvas-confetti";
 import { 
   ArrowLeft, 
   Copy, 
@@ -106,8 +107,49 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
   const [linkCopied, setCopyNotification] = useState(false);
   const [swapCopied, setSwapCopied] = useState(false);
 
+  // Celebration Toast
+  const [completedSectionToast, setCompletedSectionToast] = useState<string | null>(null);
+
+  const triggerCelebrationConfetti = (sectionName: string) => {
+    // Beautiful 2-second dual-side confetti showers
+    const duration = 2 * 1000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.85 }
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.85 }
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+
+    setCompletedSectionToast(sectionName);
+  };
+
   // File import ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-dismiss celebration toast after 5 seconds
+  useEffect(() => {
+    if (completedSectionToast) {
+      const timer = setTimeout(() => {
+        setCompletedSectionToast(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [completedSectionToast]);
 
   // Load album and unlock state on mount
   useEffect(() => {
@@ -203,6 +245,46 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
       } else {
         delete nextStickers[stickerKey];
       }
+
+      // Check if this click completed a country/section
+      const [countryCode] = stickerKey.split(" ");
+      let countryObj: Country | null = null;
+      for (const conf of CONFEDERATIONS) {
+        const found = conf.countries.find(c => c.code === countryCode);
+        if (found) {
+          countryObj = found;
+          break;
+        }
+      }
+
+      if (countryObj) {
+        // Was it already completed?
+        let wasAlreadyCompleted = true;
+        for (let i = 1; i <= countryObj.stickersCount; i++) {
+          const key = `${countryCode} ${i}`;
+          if (!prev[key] || prev[key] === 0) {
+            wasAlreadyCompleted = false;
+            break;
+          }
+        }
+
+        // Is it completed now?
+        if (!wasAlreadyCompleted) {
+          let isCompletedNow = true;
+          for (let i = 1; i <= countryObj.stickersCount; i++) {
+            const key = `${countryCode} ${i}`;
+            if (!nextStickers[key] || nextStickers[key] === 0) {
+              isCompletedNow = false;
+              break;
+            }
+          }
+
+          if (isCompletedNow) {
+            triggerCelebrationConfetti(countryObj.name);
+          }
+        }
+      }
+
       return nextStickers;
     });
   };
@@ -250,11 +332,16 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
     }
     setStickers(prev => {
       const nextStickers = { ...prev };
+      let newlyCompleted = false;
       for (let i = 1; i <= country.stickersCount; i++) {
         const key = `${country.code} ${i}`;
         if (!nextStickers[key]) {
           nextStickers[key] = 1;
+          newlyCompleted = true;
         }
+      }
+      if (newlyCompleted) {
+        triggerCelebrationConfetti(country.name);
       }
       return nextStickers;
     });
@@ -1089,6 +1176,15 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {completedSectionToast && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-[#e2001a] border-4 border-[#ffcc00] text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 animate-bounce max-w-sm w-[90%] text-center justify-center">
+          <span className="text-2xl animate-spin" style={{ animationDuration: "3s" }}>🎉</span>
+          <div className="text-left">
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#ffcc00] leading-none">Secțiune Completată!</p>
+            <p className="font-extrabold text-xs md:text-sm text-white mt-1">Felicitări! Ai completat {completedSectionToast}! 🏆</p>
           </div>
         </div>
       )}
