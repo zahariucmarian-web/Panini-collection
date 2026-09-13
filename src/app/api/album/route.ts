@@ -18,13 +18,25 @@ function generateUniqueId(): string {
   return result;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  let chosenPin = "1122"; // default fallback PIN
+  
+  try {
+    const body = await request.json();
+    if (body && typeof body.pin === "string" && body.pin.length === 4) {
+      chosenPin = body.pin;
+    }
+  } catch (e) {
+    // No body or invalid JSON, ignore and use default pin
+  }
+
   const id = generateUniqueId();
   const initialData = {
     id,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    stickers: {}
+    stickers: {},
+    pin: chosenPin
   };
 
   try {

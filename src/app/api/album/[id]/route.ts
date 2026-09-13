@@ -3,6 +3,7 @@ import { kv } from "@vercel/kv";
 
 const globalCache = (globalThis as any)._localAlbumCache || new Map<string, any>();
 
+// GET: Fetch album details (Strips the PIN field for security!)
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -11,9 +12,12 @@ export async function GET(
 
   try {
     if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      const data = await kv.get(`album:${id}`);
+      const data = await kv.get<any>(`album:${id}`);
       if (data) {
-        return NextResponse.json(data);
+        // Strip the PIN field before returning to prevent sniffing from the network tab
+        const safeData = { ...data };
+        delete safeData.pin;
+        return NextResponse.json(safeData);
       }
     }
   } catch (error) {
@@ -22,13 +26,51 @@ export async function GET(
 
   // Fallback to local cache read
   if (globalCache.has(id)) {
-    return NextResponse.json(globalCache.get(id));
+    const data = globalCache.get(id);
+    const safeData = { ...data };
+    delete safeData.pin;
+    return NextResponse.json(safeData);
   }
 
   // If album is not found anywhere, we return a 404
   return NextResponse.json({ error: "Albumul nu a fost găsit." }, { status: 404 });
 }
 
+// POST: Verify if the entered PIN matches the album's saved PIN (Secure server-side check)
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id.toLowerCase();
+
+  try {
+    const body = await request.json();
+    const enteredPin = body.pin;
+
+    let existingData: any = null;
+    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+      existingData = await kv.get(`album:${id}`);
+    } else if (globalCache.has(id)) {
+      existingData = globalCache.get(id);
+    }
+
+    if (!existingData) {
+      return NextResponse.json({ error: "Albumul nu a fost găsit." }, { status: 404 });
+    }
+
+    const storedPin = existingData.pin || "1122"; // default fallback for backwards compatibility
+
+    if (storedPin === enteredPin) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json({ success: false, error: "Cod PIN incorect." }, { status: 401 });
+    }
+  } catch (error) {
+    return NextResponse.json({ error: "Format incorect al cererii." }, { status: 400 });
+  }
+}
+
+// PUT: Save sticker edits (Preserves PIN and createdAt fields)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -37,11 +79,24 @@ export async function PUT(
   
   try {
     const body = await request.json();
+
+    // Retrieve existing data to keep stored PIN and createdAt intact
+    let existingData: any = null;
+    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+      existingData = await kv.get(`album:${id}`);
+    } else if (globalCache.has(id)) {
+      existingData = globalCache.get(id);
+    }
+
+    const storedPin = existingData?.pin || "1122";
+    const createdAt = existingData?.createdAt || new Date().toISOString();
+
     const updatedData = {
       id,
-      createdAt: body.createdAt || new Date().toISOString(),
+      createdAt,
       updatedAt: new Date().toISOString(),
-      stickers: body.stickers || {}
+      stickers: body.stickers || {},
+      pin: storedPin
     };
 
     try {

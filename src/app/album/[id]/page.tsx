@@ -40,6 +40,7 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [enteredPin, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
   // Navigation and active UI tabs
   const [activeTab, setActiveTab] = useState<"album" | "swap" | "settings">("album");
@@ -294,15 +295,33 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
     setPinModalOpen(true);
   };
 
-  const handleUnlockPin = (e: React.FormEvent) => {
+  const handleUnlockPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredPin === "1122") {
-      setIsEditUnlocked(true);
-      localStorage.setItem(`panini_unlocked_${id}`, "true");
-      setPinModalOpen(false);
-      setPinInput("");
-    } else {
+    if (enteredPin.length !== 4 || isVerifyingPin) return;
+
+    setIsVerifyingPin(true);
+    setPinError(false);
+
+    try {
+      const res = await fetch(`/api/album/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: enteredPin })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsEditUnlocked(true);
+        localStorage.setItem(`panini_unlocked_${id}`, "true");
+        setPinModalOpen(false);
+        setPinInput("");
+      } else {
+        setPinError(true);
+      }
+    } catch (err) {
       setPinError(true);
+    } finally {
+      setIsVerifyingPin(false);
     }
   };
 
@@ -998,10 +1017,14 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={enteredPin.length < 4}
-                  className="flex-1 py-3 px-4 bg-[#e2001a] hover:bg-[#c10014] text-white text-xs font-bold rounded-xl transition shadow-md disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none border-b-2 border-[#b20012]"
+                  disabled={enteredPin.length < 4 || isVerifyingPin}
+                  className="flex-1 py-3 px-4 bg-[#e2001a] hover:bg-[#c10014] text-white text-xs font-bold rounded-xl transition shadow-md disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none border-b-2 border-[#b20012] flex items-center justify-center space-x-2"
                 >
-                  Deblochează
+                  {isVerifyingPin ? (
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#ffcc00]" />
+                  ) : (
+                    <span>Deblochează</span>
+                  )}
                 </button>
               </div>
             </form>
