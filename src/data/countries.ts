@@ -16,7 +16,7 @@ export const CONFEDERATIONS: Confederation[] = [
     id: "special",
     name: "Speciale (Fifa World Cup)",
     countries: [
-      { code: "FWC", name: "Steme & Highlights", flag: "🏆", stickersCount: 20 }
+      { code: "FWC", name: "Steme & Highlights", flag: "PANINI", stickersCount: 20 }
     ]
   },
   {

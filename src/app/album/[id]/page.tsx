@@ -696,7 +696,13 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
                                 className="flex items-center justify-between p-4 md:p-5 bg-[#fbfaf7] border-b border-slate-50 cursor-pointer select-none no-select"
                               >
                                 <div className="flex items-center space-x-3">
-                                  <span className="text-2xl leading-none">{country.flag}</span>
+                                  {country.flag === "PANINI" ? (
+                                    <span className="bg-[#e2001a] border border-[#ffcc00] text-white px-1.5 py-0.5 rounded font-black text-[9px] uppercase tracking-wider leading-none select-none shadow-sm transform rotate-[-2deg]" style={{ fontFamily: "Impact, sans-serif" }}>
+                                      PANINI
+                                    </span>
+                                  ) : (
+                                    <span className="text-2xl leading-none">{country.flag}</span>
+                                  )}
                                   <div>
                                     <div className="flex items-center space-x-2">
                                       <span className="font-extrabold text-slate-800 text-sm md:text-base">
