@@ -43,7 +43,7 @@ export const CONFEDERATIONS: Confederation[] = [
       { code: "CUW", name: "Curaçao", flag: "🇨🇼", stickersCount: 20 },
       { code: "CIV", name: "Coasta de Fildeș", flag: "🇨🇮", stickersCount: 20 },
       { code: "ECU", name: "Ecuador", flag: "🇪🇨", stickersCount: 20 },
-      { code: "NED", name: "Țările de Jos", flag: "🇳🇱", stickersCount: 20 },
+      { code: "NED", name: "Olanda", flag: "🇳🇱", stickersCount: 20 },
       { code: "JPN", name: "Japonia", flag: "🇯🇵", stickersCount: 20 },
       { code: "SWE", name: "Suedia", flag: "🇸🇪", stickersCount: 20 },
       { code: "TUN", name: "Tunisia", flag: "🇹🇳", stickersCount: 20 },

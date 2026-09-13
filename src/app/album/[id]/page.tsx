@@ -108,9 +108,9 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
   const [swapCopied, setSwapCopied] = useState(false);
 
   // Celebration Toast
-  const [completedSectionToast, setCompletedSectionToast] = useState<string | null>(null);
+  const [completedSection, setCompletedSection] = useState<Country | null>(null);
 
-  const triggerCelebrationConfetti = (sectionName: string) => {
+  const triggerCelebrationConfetti = (country: Country) => {
     // Beautiful 2-second dual-side confetti showers
     const duration = 2 * 1000;
     const end = Date.now() + duration;
@@ -135,7 +135,7 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
     };
     frame();
 
-    setCompletedSectionToast(sectionName);
+    setCompletedSection(country);
   };
 
   // File import ref
@@ -143,13 +143,13 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
 
   // Auto-dismiss celebration toast after 5 seconds
   useEffect(() => {
-    if (completedSectionToast) {
+    if (completedSection) {
       const timer = setTimeout(() => {
-        setCompletedSectionToast(null);
+        setCompletedSection(null);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [completedSectionToast]);
+  }, [completedSection]);
 
   // Load album and unlock state on mount
   useEffect(() => {
@@ -232,61 +232,61 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
   const completionPercentage = Math.round((totalUniqueCollected / TOTAL_STICKERS_COUNT) * 100);
 
   // Sticker click interaction
+  // Sticker click interaction
   const handleStickerClick = (stickerKey: string) => {
     if (!isEditUnlocked) {
       triggerUnlockPrompt();
       return;
     }
-    setStickers(prev => {
-      const current = prev[stickerKey] || 0;
-      const nextStickers = { ...prev };
-      if (current === 0) {
-        nextStickers[stickerKey] = 1;
-      } else {
-        delete nextStickers[stickerKey];
-      }
 
-      // Check if this click completed a country/section
-      const [countryCode] = stickerKey.split(" ");
-      let countryObj: Country | null = null;
-      for (const conf of CONFEDERATIONS) {
-        const found = conf.countries.find(c => c.code === countryCode);
-        if (found) {
-          countryObj = found;
+    const current = stickers[stickerKey] || 0;
+    const nextStickers = { ...stickers };
+    if (current === 0) {
+      nextStickers[stickerKey] = 1;
+    } else {
+      delete nextStickers[stickerKey];
+    }
+
+    // Check if this click completed a country/section
+    const [countryCode] = stickerKey.split(" ");
+    let countryObj: Country | null = null;
+    for (const conf of CONFEDERATIONS) {
+      const found = conf.countries.find(c => c.code === countryCode);
+      if (found) {
+        countryObj = found;
+        break;
+      }
+    }
+
+    if (countryObj) {
+      // Was it already completed in current stickers?
+      let wasAlreadyCompleted = true;
+      for (let i = 1; i <= countryObj.stickersCount; i++) {
+        const key = `${countryCode} ${i}`;
+        if (!stickers[key] || stickers[key] === 0) {
+          wasAlreadyCompleted = false;
           break;
         }
       }
 
-      if (countryObj) {
-        // Was it already completed?
-        let wasAlreadyCompleted = true;
+      // Is it completed now?
+      if (!wasAlreadyCompleted) {
+        let isCompletedNow = true;
         for (let i = 1; i <= countryObj.stickersCount; i++) {
           const key = `${countryCode} ${i}`;
-          if (!prev[key] || prev[key] === 0) {
-            wasAlreadyCompleted = false;
+          if (!nextStickers[key] || nextStickers[key] === 0) {
+            isCompletedNow = false;
             break;
           }
         }
 
-        // Is it completed now?
-        if (!wasAlreadyCompleted) {
-          let isCompletedNow = true;
-          for (let i = 1; i <= countryObj.stickersCount; i++) {
-            const key = `${countryCode} ${i}`;
-            if (!nextStickers[key] || nextStickers[key] === 0) {
-              isCompletedNow = false;
-              break;
-            }
-          }
-
-          if (isCompletedNow) {
-            triggerCelebrationConfetti(countryObj.name);
-          }
+        if (isCompletedNow) {
+          triggerCelebrationConfetti(countryObj);
         }
       }
+    }
 
-      return nextStickers;
-    });
+    setStickers(nextStickers);
   };
 
   const incrementDuplicate = (stickerKey: string, e: React.MouseEvent) => {
@@ -330,21 +330,22 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
       triggerUnlockPrompt();
       return;
     }
-    setStickers(prev => {
-      const nextStickers = { ...prev };
-      let newlyCompleted = false;
-      for (let i = 1; i <= country.stickersCount; i++) {
-        const key = `${country.code} ${i}`;
-        if (!nextStickers[key]) {
-          nextStickers[key] = 1;
-          newlyCompleted = true;
-        }
+
+    const nextStickers = { ...stickers };
+    let newlyCompleted = false;
+    for (let i = 1; i <= country.stickersCount; i++) {
+      const key = `${country.code} ${i}`;
+      if (!nextStickers[key]) {
+        nextStickers[key] = 1;
+        newlyCompleted = true;
       }
-      if (newlyCompleted) {
-        triggerCelebrationConfetti(country.name);
-      }
-      return nextStickers;
-    });
+    }
+
+    if (newlyCompleted) {
+      triggerCelebrationConfetti(country);
+    }
+
+    setStickers(nextStickers);
   };
 
   const clearCountryStickers = (country: Country) => {
@@ -1179,12 +1180,26 @@ export default function AlbumTracker({ params }: { params: { id: string } }) {
           </div>
         </div>
       )}
-      {completedSectionToast && (
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-[#e2001a] border-4 border-[#ffcc00] text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 animate-bounce max-w-sm w-[90%] text-center justify-center">
+      {completedSection && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-[#e2001a] border-4 border-[#ffcc00] text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3.5 animate-bounce max-w-sm w-[90%] text-center justify-center">
           <span className="text-2xl animate-spin" style={{ animationDuration: "3s" }}>🎉</span>
+          
+          {/* Flag in celebration toast */}
+          {completedSection.flag === "PANINI" ? (
+            <span className="bg-white border border-[#ffcc00] text-[#e2001a] px-1.5 py-0.5 rounded font-black text-[9px] uppercase tracking-wider leading-none select-none shadow-sm transform rotate-[-2deg]" style={{ fontFamily: "Impact, sans-serif" }}>
+              PANINI
+            </span>
+          ) : (
+            <img 
+              src={`https://flagcdn.com/w40/${CODE_MAP[completedSection.code] || completedSection.code.toLowerCase()}.png`} 
+              alt={`${completedSection.name} flag`} 
+              className="w-8 h-5.5 object-cover rounded shadow border border-white/20"
+            />
+          )}
+
           <div className="text-left">
             <p className="text-[9px] font-black uppercase tracking-widest text-[#ffcc00] leading-none">Secțiune Completată!</p>
-            <p className="font-extrabold text-xs md:text-sm text-white mt-1">Felicitări! Ai completat {completedSectionToast}! 🏆</p>
+            <p className="font-extrabold text-xs md:text-sm text-white mt-1">Felicitări! Ai completat {completedSection.name}! 🏆</p>
           </div>
         </div>
       )}
